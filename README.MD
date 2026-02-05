@@ -5,9 +5,8 @@
 ![Assembly](https://img.shields.io/badge/language-NASM%20%2F%20Pascal-green.svg)
 ![AI Assisted](https://img.shields.io/badge/AI-Assisted-purple.svg)
 
-**LMath32** is a highly optimized, low-level assembly library that brings robust **32-bit** and **64-bit** signed/unsigned integer arithmetic to 16-bit Turbo Pascal applications. Written in 8086 Assembly (NASM dialect), it provides a bridge to perform com
-
-plex high-precision calculations on legacy hardware with maximum efficiency.
+**LMath32** is a highly optimized, low-level assembly library that brings robust **32-bit** and **64-bit** signed/unsigned integer arithmetic to 16-bit Turbo Pascal applications. Written in 8086 Assembly (NASM dialect), it provides a bridge to perform
+complex high-precision calculations on legacy hardware with maximum efficiency.
 
 ## 🚀 Features
 
@@ -133,9 +132,22 @@ The library exposes functions via the `LMath32` unit. All functions use the Pasc
 Standard functional interface.
 
 ```pascal
+{ Arithmetic: }
+Function s32neg(A: Int32): Int32;
 Function s32add(A, B: Int32): Int32;
+Function s32mul(A, B: Int32): Int32;
 Function s32div(A, B: Int32): Int32;
+Function s32mod(A, B: Int32): Int32;
+
+{ Bitwise }
+
 Function s32shl(Val: Int32; C: Integer): Int32;
+Function s32shr(Val: Int32; C: Integer): Int32;
+
+{ Comparison: Returns -1, 0, 1 }
+Function s32cmp(A, B: Int32): Integer;
+
+{ Helper }
 Procedure s32toa(Val: Int32; Buf: PChar);
 ```
 
@@ -145,8 +157,12 @@ Procedural interface (Results passed by Reference/VAR for performance).
 
 ```pascal
 { Arithmetic: Res := A op B }
+Procedure s64neg(Var Res, A: Int64);
 Procedure s64add(Var Res, A, B: Int64);
+Procedure s64sub(Var Res, A, B: Int64);
 Procedure s64mul(Var Res, A, B: Int64);
+Procedure s64div(Var Res, A, B: Int64); 
+Procedure s64mod(Var Res, A, B: Int64);
 
 { Bitwise }
 Procedure s64shl(Var Res, Val: Int64; Count: Word);
@@ -156,11 +172,15 @@ Procedure s64shr(Var Res, Val: Int64; Count: Word);
 Function s64cmp(Var A, B: Int64): Integer;
 
 { Helper }
+Procedure s64toa(Var Val: Int64; Buffer: PChar); far;
 Procedure MakeInt64(Var Res: Int64; Hi, Lo: LongInt);
 ```
+
+... and same procedures for 32/64-bit unsigned.
 
 ## 📄 License
 
 Copyright © **DosWorld**.
 
 This project is licensed under the **MIT License** - see the [LICENSE.TXT](LICENSE.TXT) file for details.
+
