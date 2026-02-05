@@ -162,6 +162,3 @@ Procedure MakeInt64(Var Res: Int64; Hi, Lo: LongInt);
 Copyright © **DosWorld**.
 
 This project is licensed under the **MIT License** - see the [LICENSE.TXT](LICENSE.TXT) file for details.
-
----
-*Created with a little help from AI.*
