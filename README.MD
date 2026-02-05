@@ -14,7 +14,7 @@ plex high-precision calculations on legacy hardware with maximum efficiency.
 *   **Complete Arithmetic Suite:** `ADD`, `SUB`, `MUL`, `DIV`, `MOD`, `NEG`.
 *   **Dual Mode Support:** Explicit support for **Signed** (`s32`/`s64`) and **Unsigned** (`u32`/`u64`) operations.
 *   **64-bit Support:** Full implementation of 64-bit integer arithmetic (`Int64`) on 16-bit processors.
-*   **Bitwise Operations:** Logical shifts (`SHL`, `SHR`) and Arithmetic shifts (`SAR`) for signed integers.
+*   **Bitwise Operations:** Logical shifts (`SHL`, `SHR`).
 *   **Comparisons:** 3-way comparison functions returning -1, 0, or 1.
 *   **String Conversion:** Fast routines to convert 32/64-bit integers to ASCIIZ strings (decimal).
 *   **Pascal Interface:** Fully typed `Unit` using the `FAR CALL` convention for seamless integration.
@@ -124,11 +124,12 @@ Total Distance (approx 48.16 units): 23279950
 C:\
 ```
 
-## 📦 API Overview
+## 📦 Short API Overview
 
 The library exposes functions via the `LMath32` unit. All functions use the Pascal calling convention (Far Calls).
 
 ### 32-bit Operations
+
 Standard functional interface.
 
 ```pascal
@@ -139,6 +140,7 @@ Procedure s32toa(Val: Int32; Buf: PChar);
 ```
 
 ### 64-bit Operations
+
 Procedural interface (Results passed by Reference/VAR for performance).
 
 ```pascal
