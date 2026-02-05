@@ -1,0 +1,18 @@
+all: LMATH32.RDF DEMO.EXE
+
+DEMO.EXE: LMATH32.OBJ LMATH32.PAS DEMO.PAS
+        TPC /M DEMO.PAS
+
+LMATH32.OBJ: LMATH32.ASM
+        NASM -f obj -DTURBO LMATH32.ASM
+
+LMATH32.RDF: LMATH32.ASM
+        NASM -f rdf LMATH32.ASM
+
+clean:
+        del LMATH32.RDF
+        del LMATH32.OBJ
+        del LMATH32.TPU
+        del DEMO.EXE
+        del *.BAK
+
