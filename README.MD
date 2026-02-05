@@ -1,61 +1,43 @@
-# LMath32: 32-bit Arithmetic Library for Turbo Pascal (16-bit)
+# LMath32: 32-bit & 64-bit Arithmetic Library for Turbo Pascal
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Platform](https://img.shields.io/badge/platform-DOS%20(16--bit)-orange.svg)
 ![Assembly](https://img.shields.io/badge/language-NASM%20%2F%20Pascal-green.svg)
+![AI Assisted](https://img.shields.io/badge/AI-Assisted-purple.svg)
 
-**LMath32** is a highly optimized, low-level assembly library that
-brings robust 32-bit signed and unsigned integer arithmetic to 16-bit
-Turbo Pascal applications. Written in 8086 Assembly (NASM dialect),
-it provides a bridge to perform complex calculatio ns on legacy hardware
-with maximum efficiency.
+**LMath32** is a highly optimized, low-level assembly library that brings robust **32-bit** and **64-bit** signed/unsigned integer arithmetic to 16-bit Turbo Pascal applications. Written in 8086 Assembly (NASM dialect), it provides a bridge to perform com
+plex high-precision calculations on legacy hardware with maximum efficiency.
 
 ## 🚀 Features
 
 *   **Complete Arithmetic Suite:** `ADD`, `SUB`, `MUL`, `DIV`, `MOD`, `NEG`.
-*   **Dual Mode Support:** Explicit support for both **Signed** (`s32`)
-    and **Unsigned** (`u32`) operations.
-*   **Bitwise Operations:** Logical shifts (`SHL`, `SHR`) and Arithmetic
-    shifts (`SAR`) for signed integers.
+*   **Dual Mode Support:** Explicit support for **Signed** (`s32`/`s64`) and **Unsigned** (`u32`/`u64`) operations.
+*   **64-bit Support:** Full implementation of 64-bit integer arithmetic (`Int64`) on 16-bit processors.
+*   **Bitwise Operations:** Logical shifts (`SHL`, `SHR`) and Arithmetic shifts (`SAR`) for signed integers.
 *   **Comparisons:** 3-way comparison functions returning -1, 0, or 1.
-*   **String Conversion:** Fast routines to convert 32-bit integers to
-    ASCIIZ strings (decimal).
-*   **Pascal Interface:** Fully typed `Unit` using the `FAR CALL`
-    convention for seamless integration.
+*   **String Conversion:** Fast routines to convert 32/64-bit integers to ASCIIZ strings (decimal).
+*   **Pascal Interface:** Fully typed `Unit` using the `FAR CALL` convention for seamless integration.
 
 ## 💡 Why use LMath32?
 
-While Turbo Pascal 7.0 provides the `LongInt` type, **LMath32** offers
-several advantages for specific use cases:
+While Turbo Pascal 7.0 provides the `LongInt` (32-bit) and `Comp` (64-bit FPU) types, **LMath32** offers unique advantages:
 
-1.  **Unsigned Arithmetic:** TP7 lacks a native `Cardinal` (32-bit unsigned) type. LMath32 allows you to work with the full 32-bit range (0 to 4,294,967,295).
-2.  **Fixed-Point Math:** The precise control over bitwise shifts
-    (`s32shr` vs `u32shr`) makes this library ideal for implementing
-    Fixed-Point arithmetic (e.g., 24.8 or 16.16 formats) for high-performance
-    physics or graphics without a math coprocessor (FPU).
-3.  **Educational Value:** A clear example of interfacing modern NASM
-    assembly with legacy Pascal code using object files (`.obj`).
-4.  **Performance:** Hand-tuned assembly kernels for division and
-    multiplication.
+1.  **64-bit Integer Math:** Perform 64-bit integer calculations (`Int64`) directly on the CPU without relying on the FPU or the floating-point `Comp` type.
+2.  **Unsigned Arithmetic:** TP7 lacks native unsigned types larger than 16-bit (`Word`). LMath32 unlocks the full range of `UInt32` and `UInt64`.
+3.  **Fixed-Point Math:** The precise control over bitwise shifts makes this library ideal for implementing Fixed-Point arithmetic (e.g., 24.8 or 16.16 formats) for high-performance physics or graphics on 8086/286 machines.
+4.  **Performance:** Hand-tuned assembly kernels for division and multiplication.
 
-## 🎮 The Demo: Ballistic Physics Simulator
+## 🎮 The Demos: Ballistic Physics Simulator
 
-Included is a `DEMO.PAS` program that showcases the library's capabilities
-by simulating a cannonball shot.
+Included are two demo programs (`DEMO32` and `DEMO64`) that showcase the library's capabilities by simulating a cannonball shot.
 
-*   **Technique:** Uses **Fixed-Point Arithmetic (24.8 format)**, where
-    256 equals 1.0. This allows simulating fractional physics using only
-    integer instructions.
+*   **Technique:** Uses **Fixed-Point Arithmetic (24.8 format)**, where 256 equals 1.0. This allows simulating fractional physics using only integer instructions.
 *   **Simulation:** Calculates projectile motion considering:
     *   **Gravity:** Constant downward force.
     *   **Wind:** Lateral force affecting trajectory.
     *   **Air Resistance (Friction):** Velocity damping over time.
     *   **Elastic Collision:** Bouncing off the ground with energy loss.
-*   **Visualization:** Outputs the calculated X/Y coordinates and Velocity
-    vectors to the console in real-time.
-
-> **Note:** The demo runs the simulation loop until the object stops or
-leaves the simulation area, then exits automatically.
+*   **Visualization:** Outputs the calculated X/Y coordinates and Velocity vectors to the console in real-time.
 
 ## 🛠️ Build Instructions
 
@@ -73,21 +55,24 @@ cd lmath32
 
 ### Compiling
 
-Simply run `make` to build the library and the demo.
+Simply run `make` to build the library and the demos.
 
 ```bash
 make
 ```
 
 This will:
-1.  Assemble `lmath32.asm` into `LMATH32.OBJ`.
-2.  Compile `lmath32.pas` (linking the OBJ).
-3.  Compile `demo.pas` into `DEMO.EXE`.
+1.  Assemble `lmath32.asm` and `lmath64.asm` into OBJ files.
+2.  Compile `lmath32.pas` (linking the OBJs).
+3.  Compile `demo32.pas` and `demo64.pas`.
 
-To run the demo:
-```bash
-C:\demo.exe
-=== Math32 Library Demo: Ballistic Simulator ===
+### Running
+
+Below is the actual output from `DEMO32.EXE`. The simulation runs until the object leaves the screen area (X > 150).
+
+```text
+C:\> DEMO32.EXE
+=== LMath32 Library Demo32: Ballistic Simulator ===
 Format: Fixed-Point 24.8 (1.0 = 256)
 ----------------------------------------------------------------
 Step | Pos X   | Pos Y   | Vel X   | Vel Y   | Action
@@ -106,44 +91,71 @@ Step | Pos X   | Pos Y   | Vel X   | Vel Y   | Action
 ----------------------------------------------------------------
 Simulation Finished.
 Total Distance (approx units): 89965
+```
 
-C:\
+The 64-bit demo produces identical physics results using `Int64` types:
+
+```text
+C:\> DEMO64.EXE
+=== LMath32 Library Demo64: Ballistic Simulator ===
+Format: 64-bit Fixed-Point 24.8 (1.0 = 256)
+----------------------------------------------------------------
+Step | Pos X   | Pos Y   | Vel X   | Vel Y   | Action
+-----+---------+---------+---------+---------+-------
+   1 |    0.00 |   50.00 |   15.00 |   20.00 | Fly...
+   2 |   14.80 |   69.66 |   14.80 |   19.66 | Fly...
+   3 |   29.41 |   89.00 |   14.60 |   19.33 | Fly...
+   4 |   43.83 |  108.02 |   14.41 |   19.01 | Fly...
+   5 |   58.05 |  126.71 |   14.22 |   18.69 | Fly...
+   6 |   72.09 |  145.09 |   14.03 |   18.37 | Fly...
+   7 |   85.94 |  163.16 |   13.85 |   18.06 | Fly...
+   8 |   99.61 |  180.92 |   13.66 |   17.75 | Fly...
+   9 |  113.10 |  198.37 |   13.48 |   17.45 | Fly...
+  10 |  126.41 |  215.52 |   13.30 |   17.14 | Fly...
+  11 |  139.54 |  232.37 |   13.13 |   16.84 | Fly...
+----------------------------------------------------------------
+Simulation Finished.
+Total Distance (approx units): 89965
 ```
 
 ## 📦 API Overview
 
-The library exposes functions via the `LMath32` unit. All functions use
-the Pascal calling convention (Far Calls).
+The library exposes functions via the `LMath32` unit. All functions use the Pascal calling convention (Far Calls).
+
+### 32-bit Operations
+Standard functional interface.
 
 ```pascal
-{ Arithmetic }
-Function s32add(A, B: Int32): Int32;   { A + B }
-Function s32sub(A, B: Int32): Int32;   { A - B }
-Function s32mul(A, B: Int32): Int32;   { A * B }
-Function s32div(A, B: Int32): Int32;   { A / B }
-Function s32mod(A, B: Int32): Int32;   { A % B }
-
-{ Bitwise }
-{ Left Shift }
+Function s32add(A, B: Int32): Int32;
+Function s32div(A, B: Int32): Int32;
 Function s32shl(Val: Int32; C: Integer): Int32;
-{ Arithmetic Right Shift (Sign fill) }
-Function s32shr(Val: Int32; C: Integer): Int32;
-{ Logical Right Shift (Zero fill) }
-Function u32shr(Val: UInt32; C: Integer): UInt32;
-
-{ Comparison (-1, 0, 1) }
-Function s32cmp(A, B: Int32): Integer;
-
-{ Conversion }
 Procedure s32toa(Val: Int32; Buf: PChar);
 ```
 
-*Note: Equivalent `u32*` functions exist for Unsigned integers.*
+### 64-bit Operations
+Procedural interface (Results passed by Reference/VAR for performance).
+
+```pascal
+{ Arithmetic: Res := A op B }
+Procedure s64add(Var Res, A, B: Int64);
+Procedure s64mul(Var Res, A, B: Int64);
+
+{ Bitwise }
+Procedure s64shl(Var Res, Val: Int64; Count: Word);
+Procedure s64shr(Var Res, Val: Int64; Count: Word);
+
+{ Comparison: Returns -1, 0, 1 }
+Function s64cmp(Var A, B: Int64): Integer;
+
+{ Helper }
+Procedure MakeInt64(Var Res: Int64; Hi, Lo: LongInt);
+```
 
 ## 📄 License
 
 Copyright © **DosWorld**.
 
-This project is licensed under the **MIT License** - see
-the [LICENSE.TXT](LICENSE.TXT) file for details.
+This project is licensed under the **MIT License** - see the [LICENSE.TXT](LICENSE.TXT) file for details.
 
+---
+*Created with a little help from AI.*

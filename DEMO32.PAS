@@ -20,7 +20,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE. }
 {$A-,I-,S-,R-,D-,L-,Q-,F-,G-,O-,B-}
-Program Demo;
+Program Demo32;
 
 { =========================================================================== }
 {  DEMO: BALLISTIC PHYSICS SIMULATOR (Fixed-Point Arithmetic)                 }
@@ -158,7 +158,7 @@ End;
 {  Main Program                                                               }
 { =========================================================================== }
 Begin
-  Writeln('=== Math32 Library Demo: Ballistic Simulator ===');
+  Writeln('=== LMath32 Library Demo32: Ballistic Simulator ===');
   Writeln('Format: Fixed-Point 24.8 (1.0 = 256)');
   Writeln('----------------------------------------------------------------');
 
