@@ -135,6 +135,7 @@ Standard functional interface.
 { Arithmetic: }
 Function s32neg(A: Int32): Int32;
 Function s32add(A, B: Int32): Int32;
+Function s32sub(A, B: Int32): Int32;
 Function s32mul(A, B: Int32): Int32;
 Function s32div(A, B: Int32): Int32;
 Function s32mod(A, B: Int32): Int32;

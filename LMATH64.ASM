@@ -23,24 +23,16 @@
 ;
 ; ==============================================================================
 ; MATH64 LIBRARY FOR TURBO PASCAL (16-BIT)
-; CPU: 8086
 ; Calling Convention: Pascal FAR CALL (VAR params = Pointers)
-; Data Type: Int64 (8 bytes)
 ; ==============================================================================
 ;
-bits 16
-cpu 8086
-
-%ifdef TURBO
-section CODE class=code
-%else
-section .text
-%endif
-
+%include "lmath.inc"
+;
 ; ==============================================================================
 ; EXPORTED SYMBOLS (UPPERCASE for Turbo Pascal linker)
 ; ==============================================================================
 ;
+
 global S64ADD, U64ADD
 global S64SUB, U64SUB
 global S64NEG
@@ -51,104 +43,85 @@ global S64SHR, U64SHR
 global S64CMP, U64CMP
 global S64TOA, U64TOA
 
-; ==============================================================================
-; ARITHMETIC OPERATIONS
-; ==============================================================================
-
-; ------------------------------------------------------------------------------
-; S64ADD / U64ADD
-; ------------------------------------------------------------------------------
 S64ADD:
 U64ADD:
     push bp
     mov bp, sp
     push ds
+    push es
     push si
     push di
-    push es
-
-    ; Load A into Registers (DX:CX:BX:AX)
-    lds si, [bp+10]     ; Pointer A
+    mov si, [bp+10]
+    mov ds, [bp+12]
     mov ax, [si]
     mov bx, [si+2]
     mov cx, [si+4]
     mov dx, [si+6]
-
-    ; Add B (Load pointer to ES:DI to preserve DS/A-regs)
-    les di, [bp+6]      ; Pointer B
-    add ax, [es:di]
-    adc bx, [es:di+2]
-    adc cx, [es:di+4]
-    adc dx, [es:di+6]
-
-    ; Store to Res
-    les di, [bp+14]     ; Pointer Res
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    add ax, [si]
+    adc bx, [si+2]
+    adc cx, [si+4]
+    adc dx, [si+6]
+    mov di, [bp+14]
+    mov es, [bp+16]
     mov [es:di], ax
     mov [es:di+2], bx
     mov [es:di+4], cx
     mov [es:di+6], dx
-
-    pop es
     pop di
     pop si
+    pop es
     pop ds
     pop bp
-    retf 12             ; Clean 3 ptrs * 4 bytes
+    retf 12
 
-; ------------------------------------------------------------------------------
-; S64SUB / U64SUB
-; ------------------------------------------------------------------------------
 S64SUB:
 U64SUB:
     push bp
     mov bp, sp
     push ds
+    push es
     push si
     push di
-    push es
-
-    lds si, [bp+10]
+    mov si, [bp+10]
+    mov ds, [bp+12]
     mov ax, [si]
     mov bx, [si+2]
     mov cx, [si+4]
     mov dx, [si+6]
-
-    les di, [bp+6]
-    sub ax, [es:di]
-    sbb bx, [es:di+2]
-    sbb cx, [es:di+4]
-    sbb dx, [es:di+6]
-
-    les di, [bp+14]
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    sub ax, [si]
+    sbb bx, [si+2]
+    sbb cx, [si+4]
+    sbb dx, [si+6]
+    mov di, [bp+14]
+    mov es, [bp+16]
     mov [es:di], ax
     mov [es:di+2], bx
     mov [es:di+4], cx
     mov [es:di+6], dx
-
-    pop es
     pop di
     pop si
+    pop es
     pop ds
     pop bp
     retf 12
 
-; ------------------------------------------------------------------------------
-; S64NEG
-; ------------------------------------------------------------------------------
 S64NEG:
     push bp
     mov bp, sp
     push ds
+    push es
     push si
     push di
-    push es
-
-    lds si, [bp+6]      ; A
+    mov si, [bp+6]
+    mov ds, [bp+8]
     mov ax, [si]
     mov bx, [si+2]
     mov cx, [si+4]
     mov dx, [si+6]
-
     not ax
     not bx
     not cx
@@ -157,41 +130,29 @@ S64NEG:
     adc bx, 0
     adc cx, 0
     adc dx, 0
-
-    les di, [bp+10]     ; Res
+    mov di, [bp+10]
+    mov es, [bp+12]
     mov [es:di], ax
     mov [es:di+2], bx
     mov [es:di+4], cx
     mov [es:di+6], dx
-
-    pop es
     pop di
     pop si
+    pop es
     pop ds
     pop bp
     retf 8
 
-; ------------------------------------------------------------------------------
-; S64MUL / U64MUL
-; ------------------------------------------------------------------------------
-S64MUL:
 U64MUL:
     push bp
     mov bp, sp
-    sub sp, 16          ; [bp-8]=Res, [bp-16]=B_Copy
+    sub sp, 32
     push ds
+    push es
     push si
     push di
-    push es
-
-    ; Clear Result
-    mov word [bp-8], 0
-    mov word [bp-6], 0
-    mov word [bp-4], 0
-    mov word [bp-2], 0
-
-    ; Load B to Stack
-    lds si, [bp+6]
+    mov si, [bp+10]
+    mov ds, [bp+12]
     mov ax, [si]
     mov [bp-16], ax
     mov ax, [si+2]
@@ -200,196 +161,465 @@ U64MUL:
     mov [bp-12], ax
     mov ax, [si+6]
     mov [bp-10], ax
-
-    ; Load A to Regs
-    lds si, [bp+10]
+    mov si, [bp+6]
+    mov ds, [bp+8]
     mov ax, [si]
-    mov bx, [si+2]
-    mov cx, [si+4]
-    mov dx, [si+6]
-
-    mov di, 64
-
+    mov [bp-24], ax
+    mov ax, [si+2]
+    mov [bp-22], ax
+    mov ax, [si+4]
+    mov [bp-20], ax
+    mov ax, [si+6]
+    mov [bp-18], ax
+    xor ax, ax
+    mov [bp-32], ax
+    mov [bp-30], ax
+    mov [bp-28], ax
+    mov [bp-26], ax
+    mov cx, 64
 .mul_loop:
-    test ax, 1
+    test word [bp-16], 1
     jz .mul_skip
-
-    push ax
-    mov ax, [bp-16]
-    add [bp-8], ax
-    mov ax, [bp-14]
-    adc [bp-6], ax
-    mov ax, [bp-12]
-    adc [bp-4], ax
-    mov ax, [bp-10]
-    adc [bp-2], ax
-    pop ax
-
+    mov ax, [bp-24]
+    add [bp-32], ax
+    mov ax, [bp-22]
+    adc [bp-30], ax
+    mov ax, [bp-20]
+    adc [bp-28], ax
+    mov ax, [bp-18]
+    adc [bp-26], ax
 .mul_skip:
-    shr dx, 1
-    rcr cx, 1
-    rcr bx, 1
-    rcr ax, 1
+    shr word [bp-10], 1
+    rcr word [bp-12], 1
+    rcr word [bp-14], 1
+    rcr word [bp-16], 1
+    shl word [bp-24], 1
+    rcl word [bp-22], 1
+    rcl word [bp-20], 1
+    rcl word [bp-18], 1
+    loop .mul_loop
+    mov di, [bp+14]
+    mov es, [bp+16]
+    mov ax, [bp-32]
+    mov [es:di], ax
+    mov ax, [bp-30]
+    mov [es:di+2], ax
+    mov ax, [bp-28]
+    mov [es:di+4], ax
+    mov ax, [bp-26]
+    mov [es:di+6], ax
+    pop di
+    pop si
+    pop es
+    pop ds
+    add sp, 32
+    pop bp
+    retf 12
 
+S64MUL:
+    push bp
+    mov bp, sp
+    sub sp, 40
+    push ds
+    push es
+    push si
+    push di
+    xor bx, bx
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si+6]
+    test ax, 8000h
+    jz .a_pos
+    inc bx
+.a_pos:
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si+6]
+    test ax, 8000h
+    jz .b_pos
+    xor bx, 1
+.b_pos:
+    mov [bp-2], bx
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si]
+    mov [bp-16], ax
+    mov ax, [si+2]
+    mov [bp-14], ax
+    mov ax, [si+4]
+    mov [bp-12], ax
+    mov ax, [si+6]
+    mov [bp-10], ax
+    test ax, 8000h
+    jz .abs_a_done
+    not word [bp-16]
+    not word [bp-14]
+    not word [bp-12]
+    not word [bp-10]
+    add word [bp-16], 1
+    adc word [bp-14], 0
+    adc word [bp-12], 0
+    adc word [bp-10], 0
+.abs_a_done:
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si]
+    mov [bp-24], ax
+    mov ax, [si+2]
+    mov [bp-22], ax
+    mov ax, [si+4]
+    mov [bp-20], ax
+    mov ax, [si+6]
+    mov [bp-18], ax
+    test ax, 8000h
+    jz .abs_b_done
+    not word [bp-24]
+    not word [bp-22]
+    not word [bp-20]
+    not word [bp-18]
+    add word [bp-24], 1
+    adc word [bp-22], 0
+    adc word [bp-20], 0
+    adc word [bp-18], 0
+.abs_b_done:
+    xor ax, ax
+    mov [bp-32], ax
+    mov [bp-30], ax
+    mov [bp-28], ax
+    mov [bp-26], ax
+    mov cx, 64
+.smul_loop:
+    test word [bp-16], 1
+    jz .smul_skip
+    mov ax, [bp-24]
+    add [bp-32], ax
+    mov ax, [bp-22]
+    adc [bp-30], ax
+    mov ax, [bp-20]
+    adc [bp-28], ax
+    mov ax, [bp-18]
+    adc [bp-26], ax
+.smul_skip:
+    shr word [bp-10], 1
+    rcr word [bp-12], 1
+    rcr word [bp-14], 1
+    rcr word [bp-16], 1
+    shl word [bp-24], 1
+    rcl word [bp-22], 1
+    rcl word [bp-20], 1
+    rcl word [bp-18], 1
+    loop .smul_loop
+    cmp word [bp-2], 0
+    je .store_smul
+    not word [bp-32]
+    not word [bp-30]
+    not word [bp-28]
+    not word [bp-26]
+    add word [bp-32], 1
+    adc word [bp-30], 0
+    adc word [bp-28], 0
+    adc word [bp-26], 0
+.store_smul:
+    mov di, [bp+14]
+    mov es, [bp+16]
+    mov ax, [bp-32]
+    mov [es:di], ax
+    mov ax, [bp-30]
+    mov [es:di+2], ax
+    mov ax, [bp-28]
+    mov [es:di+4], ax
+    mov ax, [bp-26]
+    mov [es:di+6], ax
+    pop di
+    pop si
+    pop es
+    pop ds
+    add sp, 40
+    pop bp
+    retf 12
+
+U64DIV:
+    push bp
+    mov bp, sp
+    sub sp, 40
+    push ds
+    push es
+    push si
+    push di
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si]
+    mov [bp-16], ax
+    mov ax, [si+2]
+    mov [bp-14], ax
+    mov ax, [si+4]
+    mov [bp-12], ax
+    mov ax, [si+6]
+    mov [bp-10], ax
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si]
+    mov [bp-24], ax
+    mov ax, [si+2]
+    mov [bp-22], ax
+    mov ax, [si+4]
+    mov [bp-20], ax
+    mov ax, [si+6]
+    mov [bp-18], ax
+    xor ax, ax
+    mov [bp-32], ax
+    mov [bp-30], ax
+    mov [bp-28], ax
+    mov [bp-26], ax
+    mov cx, 64
+.udiv_loop:
     shl word [bp-16], 1
     rcl word [bp-14], 1
     rcl word [bp-12], 1
     rcl word [bp-10], 1
-
-    dec di
-    jnz .mul_loop
-
-    les di, [bp+14]
-    mov ax, [bp-8]
-    mov [es:di], ax
-    mov ax, [bp-6]
-    mov [es:di+2], ax
-    mov ax, [bp-4]
-    mov [es:di+4], ax
-    mov ax, [bp-2]
-    mov [es:di+6], ax
-
-    pop es
-    pop di
-    pop si
-    pop ds
-    add sp, 16
-    pop bp
-    retf 12
-
-; ------------------------------------------------------------------------------
-; DIV_KERNEL_64
-; ------------------------------------------------------------------------------
-div_kernel_64:
-    mov word [bp-8], 0
-    mov word [bp-6], 0
-    mov word [bp-4], 0
-    mov word [bp-2], 0
-    
-    mov word [bp-16], 0
-    mov word [bp-14], 0
-    mov word [bp-12], 0
-    mov word [bp-10], 0
-    
-    mov ax, [es:di]
-    mov [bp-24], ax
-    mov ax, [es:di+2]
-    mov [bp-22], ax
-    mov ax, [es:di+4]
-    mov [bp-20], ax
-    mov ax, [es:di+6]
-    mov [bp-18], ax
-    
-    mov ax, [si]
-    mov bx, [si+2]
-    mov cx, [si+4]
-    mov dx, [si+6]
-    
-    mov si, 64
-
-.dk_loop:
-    shl ax, 1
-    rcl bx, 1
-    rcl cx, 1
-    rcl dx, 1
-    
-    rcl word [bp-16], 1
-    rcl word [bp-14], 1
-    rcl word [bp-12], 1
-    rcl word [bp-10], 1
-    
-    shl word [bp-8], 1
-    rcl word [bp-6], 1
-    rcl word [bp-4], 1
-    rcl word [bp-2], 1
-    
-    push ax
-    
-    mov ax, [bp-10]
-    cmp ax, [bp-18]
-    ja .dk_sub
-    jb .dk_next
-    mov ax, [bp-12]
-    cmp ax, [bp-20]
-    ja .dk_sub
-    jb .dk_next
-    mov ax, [bp-14]
-    cmp ax, [bp-22]
-    ja .dk_sub
-    jb .dk_next
-    mov ax, [bp-16]
-    cmp ax, [bp-24]
-    jb .dk_next
-
-.dk_sub:
+    rcl word [bp-32], 1
+    rcl word [bp-30], 1
+    rcl word [bp-28], 1
+    rcl word [bp-26], 1
+    push cx
+    mov ax, [bp-32]
+    sub ax, [bp-24]
+    mov ax, [bp-30]
+    sbb ax, [bp-22]
+    mov ax, [bp-28]
+    sbb ax, [bp-20]
+    mov ax, [bp-26]
+    sbb ax, [bp-18]
+    pop cx
+    jc .udiv_next
     mov ax, [bp-24]
-    sub [bp-16], ax
+    sub [bp-32], ax
     mov ax, [bp-22]
-    sbb [bp-14], ax
+    sbb [bp-30], ax
     mov ax, [bp-20]
-    sbb [bp-12], ax
+    sbb [bp-28], ax
     mov ax, [bp-18]
-    sbb [bp-10], ax
-    
-    or word [bp-8], 1
-
-.dk_next:
-    pop ax
-    dec si
-    jnz .dk_loop
-    
-    ret
-
-; ------------------------------------------------------------------------------
-; U64DIV / U64MOD
-; ------------------------------------------------------------------------------
-U64DIV:
-    push bp
-    mov bp, sp
-    sub sp, 24
-    push ds
-    push si
-    push di
-    push es
-
-    lds si, [bp+10]
-    les di, [bp+6]
-    
-    call div_kernel_64
-    
-    les di, [bp+14]
-    mov ax, [bp-8]
+    sbb [bp-26], ax
+    or word [bp-16], 1
+.udiv_next:
+    loop .udiv_loop
+    mov di, [bp+14]
+    mov es, [bp+16]
+    mov ax, [bp-16]
     mov [es:di], ax
-    mov ax, [bp-6]
+    mov ax, [bp-14]
     mov [es:di+2], ax
-    mov ax, [bp-4]
+    mov ax, [bp-12]
     mov [es:di+4], ax
-    mov ax, [bp-2]
+    mov ax, [bp-10]
     mov [es:di+6], ax
-
-    pop es
     pop di
     pop si
+    pop es
     pop ds
-    add sp, 24
+    add sp, 40
     pop bp
     retf 12
 
 U64MOD:
     push bp
     mov bp, sp
-    sub sp, 24
+    sub sp, 40
     push ds
+    push es
     push si
     push di
-    push es
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si]
+    mov [bp-16], ax
+    mov ax, [si+2]
+    mov [bp-14], ax
+    mov ax, [si+4]
+    mov [bp-12], ax
+    mov ax, [si+6]
+    mov [bp-10], ax
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si]
+    mov [bp-24], ax
+    mov ax, [si+2]
+    mov [bp-22], ax
+    mov ax, [si+4]
+    mov [bp-20], ax
+    mov ax, [si+6]
+    mov [bp-18], ax
+    xor ax, ax
+    mov [bp-32], ax
+    mov [bp-30], ax
+    mov [bp-28], ax
+    mov [bp-26], ax
+    mov cx, 64
+.umod_loop:
+    shl word [bp-16], 1
+    rcl word [bp-14], 1
+    rcl word [bp-12], 1
+    rcl word [bp-10], 1
+    rcl word [bp-32], 1
+    rcl word [bp-30], 1
+    rcl word [bp-28], 1
+    rcl word [bp-26], 1
+    push cx
+    mov ax, [bp-32]
+    sub ax, [bp-24]
+    mov ax, [bp-30]
+    sbb ax, [bp-22]
+    mov ax, [bp-28]
+    sbb ax, [bp-20]
+    mov ax, [bp-26]
+    sbb ax, [bp-18]
+    pop cx
+    jc .umod_next
+    mov ax, [bp-24]
+    sub [bp-32], ax
+    mov ax, [bp-22]
+    sbb [bp-30], ax
+    mov ax, [bp-20]
+    sbb [bp-28], ax
+    mov ax, [bp-18]
+    sbb [bp-26], ax
+    or word [bp-16], 1
+.umod_next:
+    loop .umod_loop
+    mov di, [bp+14]
+    mov es, [bp+16]
+    mov ax, [bp-32]
+    mov [es:di], ax
+    mov ax, [bp-30]
+    mov [es:di+2], ax
+    mov ax, [bp-28]
+    mov [es:di+4], ax
+    mov ax, [bp-26]
+    mov [es:di+6], ax
+    pop di
+    pop si
+    pop es
+    pop ds
+    add sp, 40
+    pop bp
+    retf 12
 
-    lds si, [bp+10]
-    les di, [bp+6]
-    
-    call div_kernel_64
-    
-    les di, [bp+14]
+S64DIV:
+    push bp
+    mov bp, sp
+    sub sp, 48
+    push ds
+    push es
+    push si
+    push di
+    xor bx, bx
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si+6]
+    test ax, 8000h
+    jz .a_pos_div
+    inc bx
+.a_pos_div:
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si+6]
+    test ax, 8000h
+    jz .b_pos_div
+    xor bx, 1
+.b_pos_div:
+    mov [bp-2], bx
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si]
+    mov [bp-16], ax
+    mov ax, [si+2]
+    mov [bp-14], ax
+    mov ax, [si+4]
+    mov [bp-12], ax
+    mov ax, [si+6]
+    mov [bp-10], ax
+    test ax, 8000h
+    jz .abs_a_done_div
+    not word [bp-16]
+    not word [bp-14]
+    not word [bp-12]
+    not word [bp-10]
+    add word [bp-16], 1
+    adc word [bp-14], 0
+    adc word [bp-12], 0
+    adc word [bp-10], 0
+.abs_a_done_div:
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si]
+    mov [bp-24], ax
+    mov ax, [si+2]
+    mov [bp-22], ax
+    mov ax, [si+4]
+    mov [bp-20], ax
+    mov ax, [si+6]
+    mov [bp-18], ax
+    test ax, 8000h
+    jz .abs_b_done_div
+    not word [bp-24]
+    not word [bp-22]
+    not word [bp-20]
+    not word [bp-18]
+    add word [bp-24], 1
+    adc word [bp-22], 0
+    adc word [bp-20], 0
+    adc word [bp-18], 0
+.abs_b_done_div:
+    xor ax, ax
+    mov [bp-32], ax
+    mov [bp-30], ax
+    mov [bp-28], ax
+    mov [bp-26], ax
+    mov cx, 64
+.sdiv_abs_loop:
+    shl word [bp-16], 1
+    rcl word [bp-14], 1
+    rcl word [bp-12], 1
+    rcl word [bp-10], 1
+    rcl word [bp-32], 1
+    rcl word [bp-30], 1
+    rcl word [bp-28], 1
+    rcl word [bp-26], 1
+    push cx
+    mov ax, [bp-32]
+    sub ax, [bp-24]
+    mov ax, [bp-30]
+    sbb ax, [bp-22]
+    mov ax, [bp-28]
+    sbb ax, [bp-20]
+    mov ax, [bp-26]
+    sbb ax, [bp-18]
+    pop cx
+    jc .sdiv_abs_next
+    mov ax, [bp-24]
+    sub [bp-32], ax
+    mov ax, [bp-22]
+    sbb [bp-30], ax
+    mov ax, [bp-20]
+    sbb [bp-28], ax
+    mov ax, [bp-18]
+    sbb [bp-26], ax
+    or word [bp-16], 1
+.sdiv_abs_next:
+    loop .sdiv_abs_loop
+    cmp word [bp-2], 0
+    je .quot_pos
+    not word [bp-16]
+    not word [bp-14]
+    not word [bp-12]
+    not word [bp-10]
+    add word [bp-16], 1
+    adc word [bp-14], 0
+    adc word [bp-12], 0
+    adc word [bp-10], 0
+.quot_pos:
+    mov di, [bp+14]
+    mov es, [bp+16]
     mov ax, [bp-16]
     mov [es:di], ax
     mov ax, [bp-14]
@@ -398,395 +628,452 @@ U64MOD:
     mov [es:di+4], ax
     mov ax, [bp-10]
     mov [es:di+6], ax
-
-    pop es
     pop di
     pop si
+    pop es
     pop ds
-    add sp, 24
+    add sp, 48
     pop bp
     retf 12
 
-S64DIV:
-    jmp U64DIV
 S64MOD:
-    jmp U64MOD
+    push bp
+    mov bp, sp
+    sub sp, 48
+    push ds
+    push es
+    push si
+    push di
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov ax, [si+6]
+    and ax, 8000h
+    mov [bp-4], ax
+    mov ax, [si]
+    mov [bp-16], ax
+    mov ax, [si+2]
+    mov [bp-14], ax
+    mov ax, [si+4]
+    mov [bp-12], ax
+    mov ax, [si+6]
+    mov [bp-10], ax
+    test ax, 8000h
+    jz .abs_a_done_mod
+    not word [bp-16]
+    not word [bp-14]
+    not word [bp-12]
+    not word [bp-10]
+    add word [bp-16], 1
+    adc word [bp-14], 0
+    adc word [bp-12], 0
+    adc word [bp-10], 0
+.abs_a_done_mod:
+    mov si, [bp+6]
+    mov ds, [bp+8]
+    mov ax, [si]
+    mov [bp-24], ax
+    mov ax, [si+2]
+    mov [bp-22], ax
+    mov ax, [si+4]
+    mov [bp-20], ax
+    mov ax, [si+6]
+    mov [bp-18], ax
+    test ax, 8000h
+    jz .abs_b_done_mod
+    not word [bp-24]
+    not word [bp-22]
+    not word [bp-20]
+    not word [bp-18]
+    add word [bp-24], 1
+    adc word [bp-22], 0
+    adc word [bp-20], 0
+    adc word [bp-18], 0
+.abs_b_done_mod:
+    xor ax, ax
+    mov [bp-32], ax
+    mov [bp-30], ax
+    mov [bp-28], ax
+    mov [bp-26], ax
+    mov cx, 64
+.smod_abs_loop:
+    shl word [bp-16], 1
+    rcl word [bp-14], 1
+    rcl word [bp-12], 1
+    rcl word [bp-10], 1
+    rcl word [bp-32], 1
+    rcl word [bp-30], 1
+    rcl word [bp-28], 1
+    rcl word [bp-26], 1
+    push cx
+    mov ax, [bp-32]
+    sub ax, [bp-24]
+    mov ax, [bp-30]
+    sbb ax, [bp-22]
+    mov ax, [bp-28]
+    sbb ax, [bp-20]
+    mov ax, [bp-26]
+    sbb ax, [bp-18]
+    pop cx
+    jc .smod_abs_next
+    mov ax, [bp-24]
+    sub [bp-32], ax
+    mov ax, [bp-22]
+    sbb [bp-30], ax
+    mov ax, [bp-20]
+    sbb [bp-28], ax
+    mov ax, [bp-18]
+    sbb [bp-26], ax
+    or word [bp-16], 1
+.smod_abs_next:
+    loop .smod_abs_loop
+    cmp word [bp-4], 0
+    je .rem_pos
+    not word [bp-32]
+    not word [bp-30]
+    not word [bp-28]
+    not word [bp-26]
+    add word [bp-32], 1
+    adc word [bp-30], 0
+    adc word [bp-28], 0
+    adc word [bp-26], 0
+.rem_pos:
+    mov di, [bp+14]
+    mov es, [bp+16]
+    mov ax, [bp-32]
+    mov [es:di], ax
+    mov ax, [bp-30]
+    mov [es:di+2], ax
+    mov ax, [bp-28]
+    mov [es:di+4], ax
+    mov ax, [bp-26]
+    mov [es:di+6], ax
+    pop di
+    pop si
+    pop es
+    pop ds
+    add sp, 48
+    pop bp
+    retf 12
 
-; ------------------------------------------------------------------------------
-; S64SHL / U64SHL
-; ------------------------------------------------------------------------------
 S64SHL:
 U64SHL:
     push bp
     mov bp, sp
+    sub sp, 8
     push ds
+    push es
     push si
     push di
-    push es
-
+    mov si, [bp+8]
+    mov ds, [bp+10]
+    mov ax, [si]
+    mov [bp-8], ax
+    mov ax, [si+2]
+    mov [bp-6], ax
+    mov ax, [si+4]
+    mov [bp-4], ax
+    mov ax, [si+6]
+    mov [bp-2], ax
     mov cx, [bp+6]
     and cx, 63
-    
-    lds si, [bp+8]
-    mov ax, [si]
-    mov bx, [si+2]
-    push cx
-    mov cx, [si+4]
-    mov dx, [si+6]
-    
-    pop di
-    or di, di
-    jz shl_store_common ; Jump to GLOBAL label
-
+    jz .shl_done
 .shl_loop:
-    shl ax, 1
-    rcl bx, 1
-    rcl cx, 1
-    rcl dx, 1
-    dec di
-    jnz .shl_loop
-
-shl_store_common:       ; GLOBAL label
-    les di, [bp+12]
+    shl word [bp-8], 1
+    rcl word [bp-6], 1
+    rcl word [bp-4], 1
+    rcl word [bp-2], 1
+    loop .shl_loop
+.shl_done:
+    mov di, [bp+12]
+    mov es, [bp+14]
+    mov ax, [bp-8]
     mov [es:di], ax
-    mov [es:di+2], bx
-    mov [es:di+4], cx
-    mov [es:di+6], dx
-
-    pop es
+    mov ax, [bp-6]
+    mov [es:di+2], ax
+    mov ax, [bp-4]
+    mov [es:di+4], ax
+    mov ax, [bp-2]
+    mov [es:di+6], ax
     pop di
     pop si
+    pop es
     pop ds
+    add sp, 8
     pop bp
     retf 10
 
-; ------------------------------------------------------------------------------
-; S64SHR / U64SHR
-; ------------------------------------------------------------------------------
 S64SHR:
     push bp
     mov bp, sp
+    sub sp, 8
     push ds
+    push es
     push si
     push di
-    push es
-
+    mov si, [bp+8]
+    mov ds, [bp+10]
+    mov ax, [si]
+    mov [bp-8], ax
+    mov ax, [si+2]
+    mov [bp-6], ax
+    mov ax, [si+4]
+    mov [bp-4], ax
+    mov ax, [si+6]
+    mov [bp-2], ax
     mov cx, [bp+6]
     and cx, 63
-    
-    lds si, [bp+8]
-    mov ax, [si]
-    mov bx, [si+2]
-    push cx
-    mov cx, [si+4]
-    mov dx, [si+6]
+    jz .asar_done
+.asar_loop:
+    sar word [bp-2], 1
+    rcr word [bp-4], 1
+    rcr word [bp-6], 1
+    rcr word [bp-8], 1
+    loop .asar_loop
+.asar_done:
+    mov di, [bp+12]
+    mov es, [bp+14]
+    mov ax, [bp-8]
+    mov [es:di], ax
+    mov ax, [bp-6]
+    mov [es:di+2], ax
+    mov ax, [bp-4]
+    mov [es:di+4], ax
+    mov ax, [bp-2]
+    mov [es:di+6], ax
     pop di
-
-    or di, di
-    jz shr_store_common
-
-.sar_loop:
-    sar dx, 1
-    rcr cx, 1
-    rcr bx, 1
-    rcr ax, 1
-    dec di
-    jnz .sar_loop
-
-    jmp shr_store_common
+    pop si
+    pop es
+    pop ds
+    add sp, 8
+    pop bp
+    retf 10
 
 U64SHR:
     push bp
     mov bp, sp
+    sub sp, 8
     push ds
+    push es
     push si
     push di
-    push es
-
+    mov si, [bp+8]
+    mov ds, [bp+10]
+    mov ax, [si]
+    mov [bp-8], ax
+    mov ax, [si+2]
+    mov [bp-6], ax
+    mov ax, [si+4]
+    mov [bp-4], ax
+    mov ax, [si+6]
+    mov [bp-2], ax
     mov cx, [bp+6]
     and cx, 63
-    
-    lds si, [bp+8]
-    mov ax, [si]
-    mov bx, [si+2]
-    push cx
-    mov cx, [si+4]
-    mov dx, [si+6]
-    pop di
-
-    or di, di
-    jz shr_store_common
-
-.shr_loop:
-    shr dx, 1
-    rcr cx, 1
-    rcr bx, 1
-    rcr ax, 1
-    dec di
-    jnz .shr_loop
-
-shr_store_common:       ; GLOBAL label
-    les di, [bp+12]
+    jz .ushr_done
+.ushr_loop:
+    shr word [bp-2], 1
+    rcr word [bp-4], 1
+    rcr word [bp-6], 1
+    rcr word [bp-8], 1
+    loop .ushr_loop
+.ushr_done:
+    mov di, [bp+12]
+    mov es, [bp+14]
+    mov ax, [bp-8]
     mov [es:di], ax
-    mov [es:di+2], bx
-    mov [es:di+4], cx
-    mov [es:di+6], dx
-
-    pop es
+    mov ax, [bp-6]
+    mov [es:di+2], ax
+    mov ax, [bp-4]
+    mov [es:di+4], ax
+    mov ax, [bp-2]
+    mov [es:di+6], ax
     pop di
     pop si
+    pop es
     pop ds
+    add sp, 8
     pop bp
     retf 10
 
-; ------------------------------------------------------------------------------
-; S64CMP
-; ------------------------------------------------------------------------------
 S64CMP:
     push bp
     mov bp, sp
     push ds
-    push si
     push es
+    push si
     push di
-
-    lds si, [bp+10]
-    les di, [bp+6]
-    
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov di, [bp+6]
+    mov es, [bp+8]
     mov ax, [si+6]
-    mov dx, [es:di+6]
-    cmp ax, dx
-    jl .cmp_less
-    jg .cmp_greater
-    
+    cmp ax, [es:di+6]
+    jl .less
+    jg .greater
     mov ax, [si+4]
-    mov dx, [es:di+4]
-    cmp ax, dx
-    jb .cmp_less
-    ja .cmp_greater
-    
+    cmp ax, [es:di+4]
+    jb .less
+    ja .greater
     mov ax, [si+2]
-    mov dx, [es:di+2]
-    cmp ax, dx
-    jb .cmp_less
-    ja .cmp_greater
-    
+    cmp ax, [es:di+2]
+    jb .less
+    ja .greater
     mov ax, [si]
-    mov dx, [es:di]
-    cmp ax, dx
-    jb .cmp_less
-    ja .cmp_greater
-    
+    cmp ax, [es:di]
+    jb .less
+    ja .greater
     xor ax, ax
-    jmp cmp_done_common
-
-.cmp_less:
+    jmp .done
+.less:
     mov ax, -1
-    jmp cmp_done_common
-.cmp_greater:
+    jmp .done
+.greater:
     mov ax, 1
-    jmp cmp_done_common
+.done:
+    pop di
+    pop si
+    pop es
+    pop ds
+    pop bp
+    retf 8
 
-; ------------------------------------------------------------------------------
-; U64CMP
-; ------------------------------------------------------------------------------
 U64CMP:
     push bp
     mov bp, sp
     push ds
-    push si
     push es
+    push si
     push di
-
-    lds si, [bp+10]
-    les di, [bp+6]
-    
+    mov si, [bp+10]
+    mov ds, [bp+12]
+    mov di, [bp+6]
+    mov es, [bp+8]
     mov ax, [si+6]
-    mov dx, [es:di+6]
-    cmp ax, dx
-    jb .u_less
-    ja .u_greater
-    
+    cmp ax, [es:di+6]
+    jb .less
+    ja .greater
     mov ax, [si+4]
-    mov dx, [es:di+4]
-    cmp ax, dx
-    jb .u_less
-    ja .u_greater
-    
+    cmp ax, [es:di+4]
+    jb .less
+    ja .greater
     mov ax, [si+2]
-    mov dx, [es:di+2]
-    cmp ax, dx
-    jb .u_less
-    ja .u_greater
-    
+    cmp ax, [es:di+2]
+    jb .less
+    ja .greater
     mov ax, [si]
-    mov dx, [es:di]
-    cmp ax, dx
-    jb .u_less
-    ja .u_greater
-    
+    cmp ax, [es:di]
+    jb .less
+    ja .greater
     xor ax, ax
-    jmp cmp_done_common
-
-.u_less:
+    jmp .done
+.less:
     mov ax, -1
-    jmp cmp_done_common
-.u_greater:
+    jmp .done
+.greater:
     mov ax, 1
-
-cmp_done_common:        ; GLOBAL label for shared exit
+.done:
     pop di
-    pop es
     pop si
+    pop es
     pop ds
     pop bp
     retf 8
 
-; ------------------------------------------------------------------------------
-; S64TOA / U64TOA
-; ------------------------------------------------------------------------------
 S64TOA:
     push bp
     mov bp, sp
-    sub sp, 8
-    push ds
-    push si
-    push di
-    push es
-
-    les di, [bp+6]      ; Buffer
-    lds si, [bp+10]     ; Val
-    
-    ; Check Sign
-    mov dx, [si+6]
-    test dx, 8000h
-    jz .s_pos
-
-    ; Negative
-    mov byte [es:di], '-'
-    inc di
-    
-    ; Copy and Negate to Local
-    mov ax, [si]
-    not ax
-    mov [bp-8], ax
-    mov ax, [si+2]
-    not ax
-    mov [bp-6], ax
-    mov ax, [si+4]
-    not ax
-    mov [bp-4], ax
-    mov ax, dx
-    not ax
-    mov [bp-2], ax
-    
-    add word [bp-8], 1
-    adc word [bp-6], 0
-    adc word [bp-4], 0
-    adc word [bp-2], 0
-    
-    jmp toa_convert_start
-
-.s_pos:
-    ; Copy to Local
-    mov ax, [si]
-    mov [bp-8], ax
-    mov ax, [si+2]
-    mov [bp-6], ax
-    mov ax, [si+4]
-    mov [bp-4], ax
-    mov ax, dx
-    mov [bp-2], ax
-
-    jmp toa_convert_start
+    mov ax, 1
+    push ax
+    jmp toa_common
 
 U64TOA:
     push bp
     mov bp, sp
+    xor ax, ax
+    push ax
+    jmp toa_common
+
+toa_common:
     sub sp, 8
     push ds
+    push es
     push si
     push di
-    push es
-    
-    lds si, [bp+10]
+    mov si, [bp+10]
+    mov ds, [bp+12]
     mov ax, [si]
-    mov [bp-8], ax
+    mov [bp-10], ax
     mov ax, [si+2]
-    mov [bp-6], ax
+    mov [bp-8], ax
     mov ax, [si+4]
-    mov [bp-4], ax
+    mov [bp-6], ax
     mov ax, [si+6]
-    mov [bp-2], ax
-    
-    les di, [bp+6]
-
-toa_convert_start:      ; GLOBAL label
-    ; Check Zero
-    mov ax, [bp-8]
-    or ax, [bp-6]
-    or ax, [bp-4]
-    or ax, [bp-2]
-    jnz .toa_not_zero
-    
-    mov byte [es:di], '0'
+    mov [bp-4], ax
+    mov di, [bp+6]
+    mov es, [bp+8]
+    cmp word [bp-2], 1
+    jne .conv_unsigned
+    test word [bp-4], 8000h
+    jz .conv_unsigned
+    mov byte [es:di], '-'
     inc di
-    mov byte [es:di], 0
-    jmp toa_exit_common
-
-.toa_not_zero:
-    xor cx, cx
-
-.toa_loop:
-    call local_div10
-    add bl, '0'
-    push bx
-    inc cx
-    
-    mov ax, [bp-8]
+    not word [bp-10]
+    not word [bp-8]
+    not word [bp-6]
+    not word [bp-4]
+    add word [bp-10], 1
+    adc word [bp-8], 0
+    adc word [bp-6], 0
+    adc word [bp-4], 0
+.conv_unsigned:
+    mov ax, [bp-10]
+    or ax, [bp-8]
     or ax, [bp-6]
     or ax, [bp-4]
-    or ax, [bp-2]
-    jnz .toa_loop
-
-.toa_pop:
+    jnz .not_zero
+    mov word [es:di], '0'
+    mov byte [es:di+1], 0
+    jmp .exit
+.not_zero:
+    xor cx, cx
+    mov bx, 10
+.div_loop:
+    xor dx, dx
+    mov ax, [bp-4]
+    div bx
+    mov [bp-4], ax
+    mov ax, [bp-6]
+    div bx
+    mov [bp-6], ax
+    mov ax, [bp-8]
+    div bx
+    mov [bp-8], ax
+    mov ax, [bp-10]
+    div bx
+    mov [bp-10], ax
+    add dl, '0'
+    push dx
+    inc cx
+    mov ax, [bp-10]
+    or ax, [bp-8]
+    or ax, [bp-6]
+    or ax, [bp-4]
+    jnz .div_loop
+.store_digits:
     pop ax
     stosb
-    loop .toa_pop
+    loop .store_digits
     mov byte [es:di], 0
-
-toa_exit_common:        ; GLOBAL label
-    pop es
+.exit:
     pop di
     pop si
+    pop es
     pop ds
-    add sp, 8
+    add sp, 10
     pop bp
     retf 8
 
-; Helper for TOA
-local_div10:
-    push si
-    mov si, 10
-    xor dx, dx
-    
-    mov ax, [bp-2]
-    div si
-    mov [bp-2], ax
-    
-    mov ax, [bp-4]
-    div si
-    mov [bp-4], ax
-    
-    mov ax, [bp-6]
-    div si
-    mov [bp-6], ax
-    
-    mov ax, [bp-8]
-    div si
-    mov [bp-8], ax
-    
-    mov bx, dx
-    pop si
-    ret
+
+
+
+
 

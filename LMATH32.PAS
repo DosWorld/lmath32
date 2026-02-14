@@ -47,8 +47,6 @@ Type
   Int64  = Array[1..8] of Byte; { Signed 64-bit Integer }
   UInt64 = Int64;               { Unsigned 64-bit Integer }
 
-  PBuffer = PChar;
-
 { =========================================================================== }
 {  32-BIT ARITHMETIC OPERATIONS                                               }
 { =========================================================================== }
@@ -132,8 +130,8 @@ Function u32cmp(A, B: UInt32): Integer; far;
 {  Description: Converts a 32-bit integer to a null-terminated string.        }
 {  Output:      Buffer filled with ASCIIZ string. Min size: 12 bytes.         }
 { --------------------------------------------------------------------------- }
-Procedure s32toa(Val: Int32; Buffer: PBuffer); far;
-Procedure u32toa(Val: UInt32; Buffer: PBuffer); far;
+Procedure s32toa(Val: Int32; Buffer: PChar); far;
+Procedure u32toa(Val: UInt32; Buffer: PChar); far;
 
 
 { =========================================================================== }
@@ -227,8 +225,8 @@ Function u64cmp(Var A, B: UInt64): Integer; far;
 {  Description: Converts a 64-bit integer to a null-terminated string.        }
 {  Output:      Buffer filled with ASCIIZ string. Min size: 22 bytes.         }
 { --------------------------------------------------------------------------- }
-Procedure s64toa(Var Val: Int64; Buffer: PBuffer); far;
-Procedure u64toa(Var Val: UInt64; Buffer: PBuffer); far;
+Procedure s64toa(Var Val: Int64; Buffer: PChar); far;
+Procedure u64toa(Var Val: UInt64; Buffer: PChar); far;
 
 { --------------------------------------------------------------------------- }
 {  MakeInt64                                                                  }

@@ -26,15 +26,8 @@
 ; Calling Convention: Pascal FAR CALL
 ; ==============================================================================
 ;
-bits 16
-cpu 8086
-
-%ifdef TURBO
-section CODE class=code
-%else
-section .text
-%endif
-
+%include "lmath.inc"
+;
 ; ==============================================================================
 ; EXPORTED SYMBOLS (UPPERCASE for Turbo Pascal linker)
 ; ==============================================================================
@@ -49,14 +42,11 @@ global U32SHR, S32SHR
 global S32CMP, U32CMP
 global S32TOA, U32TOA
 global S32NEG
-;
-; ==============================================================================
-; STRING CONVERSION
-; ==============================================================================
 
-; ------------------------------------------------------------------------------
 ; S32TOA (Signed)
-; ------------------------------------------------------------------------------
+; Converts signed 32-bit integer to ASCIIZ string
+; Input: far pointer to buffer (segment:offset), 32-bit value in DX:AX
+; Output: string at buffer, terminated by 0
 S32TOA:
     push bp
     mov bp, sp
@@ -68,20 +58,16 @@ S32TOA:
     push di
     push es
 
-    ; Load Buffer Pointer to ES:DI
-    mov ax, [bp+8]      ; Segment
+    mov ax, [bp+8]
     mov es, ax
-    mov di, [bp+6]      ; Offset
+    mov di, [bp+6]
 
-    ; Load Value to DX:AX
     mov dx, [bp+12]
     mov ax, [bp+10]
 
-    ; Check Sign
     test dx, dx
     jns .is_positive
 
-    ; Handle negative: write '-' and negate
     mov byte [es:di], '-'
     inc di
     
@@ -103,9 +89,10 @@ S32TOA:
     pop bp
     retf 8
 
-; ------------------------------------------------------------------------------
 ; U32TOA (Unsigned)
-; ------------------------------------------------------------------------------
+; Converts unsigned 32-bit integer to ASCIIZ string
+; Input: far pointer to buffer (segment:offset), 32-bit value in DX:AX
+; Output: string at buffer, terminated by 0
 U32TOA:
     push bp
     mov bp, sp
@@ -117,9 +104,9 @@ U32TOA:
     push di
     push es
 
-    mov ax, [bp+8]      ; Segment
+    mov ax, [bp+8]
     mov es, ax
-    mov di, [bp+6]      ; Offset
+    mov di, [bp+6]
 
     mov dx, [bp+12]
     mov ax, [bp+10]
@@ -136,12 +123,7 @@ U32TOA:
     pop bp
     retf 8
 
-; ------------------------------------------------------------------------------
-; INTERNAL: u32toa_internal (Near Call)
-; BUG FIX: CX is now preserved across local_div_10 call
-; ------------------------------------------------------------------------------
 u32toa_internal:
-    ; Check if value is 0
     mov bx, dx
     or bx, ax
     jnz .convert
@@ -152,54 +134,45 @@ u32toa_internal:
     ret
 
 .convert:
-    xor cx, cx          ; Digit counter
+    xor cx, cx
 
 .loop_div:
-    push cx             ; <--- FIX: Save digit counter
-    call local_div_10   ; DX:AX = Quot, BX = Remainder. Destroys CX!
-    pop cx              ; <--- FIX: Restore digit counter
+    push cx
+    call local_div_10
+    pop cx
     
     add bl, '0'
-    push bx             ; Push char to stack
-    inc cx              ; Increment digit count
+    push bx
+    inc cx
     
-    ; Check if Quotient (DX:AX) is 0
     mov si, dx
     or si, ax
     jnz .loop_div
 
 .write_loop:
     pop ax
-    stosb               ; Write char from stack to buffer
-    loop .write_loop
+    stosb
+    dec cx
+    jnz .write_loop
 
-    mov byte [es:di], 0 ; Null terminator
+    mov byte [es:di], 0
     ret
 
-; ------------------------------------------------------------------------------
-; INTERNAL: local_div_10 (Near Call)
-; Divide DX:AX by 10. Result in DX:AX, Remainder in BX.
-; Destroys: CX
-; ------------------------------------------------------------------------------
 local_div_10:
     mov cx, 10
     push ax
     mov ax, dx
     xor dx, dx
-    div cx          ; Divide High Word
-    mov bx, ax      ; BX = High Quotient
+    div cx
+    mov bx, ax
     pop ax
-    div cx          ; Divide (Rem_High:Low)
+    div cx
     
-    ; Now: AX = Low Quotient, DX = Final Remainder
-    mov cx, dx      ; Save Remainder temporarily
-    mov dx, bx      ; DX = High Quotient
-    mov bx, cx      ; BX = Final Remainder
+    mov cx, dx
+    mov dx, bx
+    mov bx, cx
     ret
 
-; ==============================================================================
-; KERNEL (Near Call)
-; ==============================================================================
 div_kernel_32:
     push bp
     push si
@@ -249,40 +222,43 @@ div_kernel_32:
     pop bp
     ret
 
-; ==============================================================================
-; COMPARISON (FAR CALLS)
-; FIX: Shared labels are now named globally (no dots) to avoid scope issues
-; ==============================================================================
+; S32CMP (Signed)
+; Compares two signed 32-bit integers
+; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
+; Output: DX:AX = -1 if first < second, 0 if equal, 1 if first > second
 S32CMP:
     push bp
     mov bp, sp
     mov dx, [bp+12]
     cmp dx, [bp+8]
-    jl cmp_ret_minus
-    jg cmp_ret_plus
+    jl  cmp_ret_minus
+    jg  cmp_ret_plus
     mov ax, [bp+10]
     cmp ax, [bp+6]
-    jb cmp_ret_minus
-    ja cmp_ret_plus
+    jb  cmp_ret_minus
+    ja  cmp_ret_plus
     jmp cmp_ret_zero
 
+; U32CMP (Unsigned)
+; Compares two unsigned 32-bit integers
+; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
+; Output: DX:AX = -1 if first < second, 0 if equal, 1 if first > second
 U32CMP:
     push bp
     mov bp, sp
     mov dx, [bp+12]
     cmp dx, [bp+8]
-    jb cmp_ret_minus
-    ja cmp_ret_plus
+    jb  cmp_ret_minus
+    ja  cmp_ret_plus
     mov ax, [bp+10]
     cmp ax, [bp+6]
-    jb cmp_ret_minus
-    ja cmp_ret_plus
+    jb  cmp_ret_minus
+    ja  cmp_ret_plus
     jmp cmp_ret_zero
 
-; -- Global Shared Exit Points --
 cmp_ret_minus:
     mov dx, 0FFFFh
-    mov ax, 0FFFFh
+    mov ax, dx
     pop bp
     retf 8
 
@@ -294,13 +270,14 @@ cmp_ret_plus:
 
 cmp_ret_zero:
     xor dx, dx
-    xor ax, ax
+    mov ax, dx
     pop bp
     retf 8
 
-; ==============================================================================
-; ARITHMETIC (FAR CALLS)
-; ==============================================================================
+; S32ADD (Signed) and U32ADD (Unsigned)
+; Adds two 32-bit integers
+; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
+; Output: DX:AX = sum
 S32ADD:
 U32ADD:
     push bp
@@ -312,6 +289,10 @@ U32ADD:
     pop bp
     retf 8
 
+; S32SUB (Signed) and U32SUB (Unsigned)
+; Subtracts two 32-bit integers
+; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
+; Output: DX:AX = first - second
 S32SUB:
 U32SUB:
     push bp
@@ -323,6 +304,10 @@ U32SUB:
     pop bp
     retf 8
 
+; S32NEG (Signed)
+; Negates a 32-bit integer
+; Input: 32-bit value on stack (high word, low word)
+; Output: DX:AX = -value
 S32NEG:
     push bp
     mov bp, sp
@@ -335,36 +320,125 @@ S32NEG:
     pop bp
     retf 4
 
+; S32MUL (Signed)
+; Multiplies two signed 32-bit integers
+; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
+; Output: DX:AX = product
 S32MUL:
     push bp
     mov bp, sp
+    push si
+    push di
+    sub sp, 6
+
+    mov dx, [bp+12]
     mov ax, [bp+10]
-    imul word [bp+8]
-    mov cx, ax
-    mov ax, [bp+6]
-    imul word [bp+12]
+    mov cx, [bp+8]
+    mov bx, [bp+6]
+
+    xor si, si
+    test dx, 0x8000
+    jz .chk_y
+    mov si, 1
+    not dx
+    not ax
+    add ax, 1
+    adc dx, 0
+.chk_y:
+    test cx, 0x8000
+    jz .save_abs
+    xor si, 1
+    not cx
+    not bx
+    add bx, 1
+    adc cx, 0
+.save_abs:
+    mov [bp-8], bx
+    mov [bp-10], cx
+    mov [bp-6], si
+
+    mov si, ax
+    mov di, dx
+
+    mov ax, si
+    mul word [bp-8]
+    mov bx, ax
+    push dx
+
+    mov ax, si
+    mul word [bp-10]
+    pop cx
     add cx, ax
-    mov ax, [bp+10]
-    mul word [bp+6]
-    add dx, cx
+    push cx
+
+    mov ax, di
+    mul word [bp-8]
+    pop cx
+    add cx, ax
+
+    mov ax, bx
+    mov dx, cx
+
+    mov si, [bp-6]
+    test si, 1
+    jz .done
+    not dx
+    not ax
+    add ax, 1
+    adc dx, 0
+.done:
+    add sp, 6
+    pop di
+    pop si
     pop bp
     retf 8
 
+; U32MUL (Unsigned)
+; Multiplies two unsigned 32-bit integers
+; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
+; Output: DX:AX = product
 U32MUL:
     push bp
     mov bp, sp
+    push si
+    push di
+
+    mov dx, [bp+12]
     mov ax, [bp+10]
-    mul word [bp+8]
-    mov cx, ax
-    mov ax, [bp+6]
-    mul word [bp+12]
-    add cx, ax
-    mov ax, [bp+10]
+    mov cx, [bp+8]
+    mov bx, [bp+6]
+
+    mov si, ax
+    mov di, dx
+
+    mov ax, si
+    mul bx
+    mov bx, ax
+    push dx
+
+    mov ax, si
+    mul cx
+    pop dx
+    add dx, ax
+    push dx
+
+    mov ax, di
     mul word [bp+6]
-    add dx, cx
+    pop cx
+    add cx, ax
+
+    mov ax, bx
+    mov dx, cx
+
+    pop di
+    pop si
     pop bp
     retf 8
 
+; S32DIV (Signed)
+; Divides two signed 32-bit integers
+; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
+; Output: DX:AX = quotient
 S32DIV:
     push bp
     mov bp, sp
@@ -408,6 +482,10 @@ S32DIV:
     pop bp
     retf 8
 
+; S32MOD (Signed)
+; Computes remainder of signed division
+; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
+; Output: DX:AX = remainder (sign of dividend)
 S32MOD:
     push bp
     mov bp, sp
@@ -422,7 +500,7 @@ S32MOD:
     xor si, si
     test dx, dx
     jns .check_b
-    not si
+    mov si, 1
     not dx
     not ax
     add ax, 1
@@ -452,6 +530,10 @@ S32MOD:
     pop bp
     retf 8
 
+; U32DIV (Unsigned)
+; Divides two unsigned 32-bit integers
+; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
+; Output: DX:AX = quotient
 U32DIV:
     push bp
     mov bp, sp
@@ -469,6 +551,10 @@ U32DIV:
     pop bp
     retf 8
 
+; U32MOD (Unsigned)
+; Computes remainder of unsigned division
+; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
+; Output: DX:AX = remainder
 U32MOD:
     push bp
     mov bp, sp
@@ -488,9 +574,10 @@ U32MOD:
     pop bp
     retf 8
 
-; ==============================================================================
-; SHIFT OPERATIONS (FAR CALLS)
-; ==============================================================================
+; S32SHL (Signed) and U32SHL (Unsigned)
+; Shifts 32-bit value left
+; Input: 32-bit value in DX:AX, shift count in CX (clipped to 0..63)
+; Output: DX:AX = value << count
 S32SHL:
 U32SHL:
     push bp
@@ -501,11 +588,13 @@ U32SHL:
     and cx, 0x3F
     cmp cx, 32
     jae .zero
-    jcxz .done
+    cmp cx, 0
+    je .done
 .loop:
     shl ax, 1
     rcl dx, 1
-    loop .loop
+    dec cx
+    jnz .loop
     jmp .done
 .zero:
     xor ax, ax
@@ -514,6 +603,10 @@ U32SHL:
     pop bp
     retf 6
 
+; U32SHR (Unsigned)
+; Shifts unsigned 32-bit value right (logical shift)
+; Input: 32-bit value in DX:AX, shift count in CX (clipped to 0..63)
+; Output: DX:AX = value >> count (zero fill)
 U32SHR:
     push bp
     mov bp, sp
@@ -523,11 +616,13 @@ U32SHR:
     and cx, 0x3F
     cmp cx, 32
     jae .zero
-    jcxz .done
+    cmp cx, 0
+    je .done
 .loop:
     shr dx, 1
     rcr ax, 1
-    loop .loop
+    dec cx
+    jnz .loop
     jmp .done
 .zero:
     xor ax, ax
@@ -536,6 +631,10 @@ U32SHR:
     pop bp
     retf 6
 
+; S32SHR (Signed)
+; Shifts signed 32-bit value right (arithmetic shift)
+; Input: 32-bit value in DX:AX, shift count in CX (clipped to 0..63)
+; Output: DX:AX = value >> count (sign extended)
 S32SHR:
     push bp
     mov bp, sp
@@ -545,11 +644,13 @@ S32SHR:
     and cx, 0x3F
     cmp cx, 32
     jae .fill_sign
-    jcxz .done
+    cmp cx, 0
+    je .done
 .loop:
     sar dx, 1
     rcr ax, 1
-    loop .loop
+    dec cx
+    jnz .loop
     jmp .done
 .fill_sign:
     cmp word [bp+10], 0
@@ -563,5 +664,7 @@ S32SHR:
 .done:
     pop bp
     retf 6
+
+
 
 
