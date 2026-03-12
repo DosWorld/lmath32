@@ -32,7 +32,6 @@
 ; EXPORTED SYMBOLS (UPPERCASE for Turbo Pascal linker)
 ; ==============================================================================
 ;
-
 global S64ADD, U64ADD
 global S64SUB, U64SUB
 global S64NEG
@@ -47,24 +46,30 @@ S64ADD:
 U64ADD:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov bx, [si+2]
     mov cx, [si+4]
     mov dx, [si+6]
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     add ax, [si]
     adc bx, [si+2]
     adc cx, [si+4]
     adc dx, [si+6]
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov [es:di], ax
     mov [es:di+2], bx
     mov [es:di+4], cx
@@ -73,31 +78,43 @@ U64ADD:
     pop si
     pop es
     pop ds
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 S64SUB:
 U64SUB:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov bx, [si+2]
     mov cx, [si+4]
     mov dx, [si+6]
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     sub ax, [si]
     sbb bx, [si+2]
     sbb cx, [si+4]
     sbb dx, [si+6]
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov [es:di], ax
     mov [es:di+2], bx
     mov [es:di+4], cx
@@ -106,18 +123,28 @@ U64SUB:
     pop si
     pop es
     pop ds
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 S64NEG:
     push bp
     mov bp, sp
+    %define op_off bp+RSIZE+2
+    %define op_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+6
+    %define res_seg bp+RSIZE+8
     push ds
     push es
     push si
     push di
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op_off]
+    mov ds, [op_seg]
     mov ax, [si]
     mov bx, [si+2]
     mov cx, [si+4]
@@ -130,8 +157,8 @@ S64NEG:
     adc bx, 0
     adc cx, 0
     adc dx, 0
-    mov di, [bp+10]
-    mov es, [bp+12]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov [es:di], ax
     mov [es:di+2], bx
     mov [es:di+4], cx
@@ -140,19 +167,29 @@ S64NEG:
     pop si
     pop es
     pop ds
+    %undef op_off
+    %undef op_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 8
+    RETMACRO 8
 
 U64MUL:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     sub sp, 32
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov [bp-16], ax
     mov ax, [si+2]
@@ -161,8 +198,8 @@ U64MUL:
     mov [bp-12], ax
     mov ax, [si+6]
     mov [bp-10], ax
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si]
     mov [bp-24], ax
     mov ax, [si+2]
@@ -198,8 +235,8 @@ U64MUL:
     rcl word [bp-20], 1
     rcl word [bp-18], 1
     loop .mul_loop
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-32]
     mov [es:di], ax
     mov ax, [bp-30]
@@ -213,35 +250,47 @@ U64MUL:
     pop es
     pop ds
     add sp, 32
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 S64MUL:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     sub sp, 40
     push ds
     push es
     push si
     push di
     xor bx, bx
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si+6]
     test ax, 8000h
     jz .a_pos
     inc bx
 .a_pos:
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si+6]
     test ax, 8000h
     jz .b_pos
     xor bx, 1
 .b_pos:
     mov [bp-2], bx
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov [bp-16], ax
     mov ax, [si+2]
@@ -261,8 +310,8 @@ S64MUL:
     adc word [bp-12], 0
     adc word [bp-10], 0
 .abs_a_done:
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si]
     mov [bp-24], ax
     mov ax, [si+2]
@@ -320,8 +369,8 @@ S64MUL:
     adc word [bp-28], 0
     adc word [bp-26], 0
 .store_smul:
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-32]
     mov [es:di], ax
     mov ax, [bp-30]
@@ -335,19 +384,31 @@ S64MUL:
     pop es
     pop ds
     add sp, 40
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 U64DIV:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     sub sp, 40
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov [bp-16], ax
     mov ax, [si+2]
@@ -356,8 +417,8 @@ U64DIV:
     mov [bp-12], ax
     mov ax, [si+6]
     mov [bp-10], ax
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si]
     mov [bp-24], ax
     mov ax, [si+2]
@@ -403,8 +464,8 @@ U64DIV:
     or word [bp-16], 1
 .udiv_next:
     loop .udiv_loop
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-16]
     mov [es:di], ax
     mov ax, [bp-14]
@@ -418,19 +479,31 @@ U64DIV:
     pop es
     pop ds
     add sp, 40
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 U64MOD:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     sub sp, 40
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov [bp-16], ax
     mov ax, [si+2]
@@ -439,8 +512,8 @@ U64MOD:
     mov [bp-12], ax
     mov ax, [si+6]
     mov [bp-10], ax
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si]
     mov [bp-24], ax
     mov ax, [si+2]
@@ -486,8 +559,8 @@ U64MOD:
     or word [bp-16], 1
 .umod_next:
     loop .umod_loop
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-32]
     mov [es:di], ax
     mov ax, [bp-30]
@@ -501,35 +574,47 @@ U64MOD:
     pop es
     pop ds
     add sp, 40
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 S64DIV:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     sub sp, 48
     push ds
     push es
     push si
     push di
     xor bx, bx
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si+6]
     test ax, 8000h
     jz .a_pos_div
     inc bx
 .a_pos_div:
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si+6]
     test ax, 8000h
     jz .b_pos_div
     xor bx, 1
 .b_pos_div:
     mov [bp-2], bx
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si]
     mov [bp-16], ax
     mov ax, [si+2]
@@ -549,8 +634,8 @@ S64DIV:
     adc word [bp-12], 0
     adc word [bp-10], 0
 .abs_a_done_div:
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si]
     mov [bp-24], ax
     mov ax, [si+2]
@@ -618,8 +703,8 @@ S64DIV:
     adc word [bp-12], 0
     adc word [bp-10], 0
 .quot_pos:
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-16]
     mov [es:di], ax
     mov ax, [bp-14]
@@ -633,19 +718,31 @@ S64DIV:
     pop es
     pop ds
     add sp, 48
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 S64MOD:
     push bp
     mov bp, sp
+    %define op1_off bp+RSIZE+6
+    %define op1_seg bp+RSIZE+8
+    %define op2_off bp+RSIZE+2
+    %define op2_seg bp+RSIZE+4
+    %define res_off bp+RSIZE+10
+    %define res_seg bp+RSIZE+12
     sub sp, 48
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [op1_off]
+    mov ds, [op1_seg]
     mov ax, [si+6]
     and ax, 8000h
     mov [bp-4], ax
@@ -668,8 +765,8 @@ S64MOD:
     adc word [bp-12], 0
     adc word [bp-10], 0
 .abs_a_done_mod:
-    mov si, [bp+6]
-    mov ds, [bp+8]
+    mov si, [op2_off]
+    mov ds, [op2_seg]
     mov ax, [si]
     mov [bp-24], ax
     mov ax, [si+2]
@@ -737,8 +834,8 @@ S64MOD:
     adc word [bp-28], 0
     adc word [bp-26], 0
 .rem_pos:
-    mov di, [bp+14]
-    mov es, [bp+16]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-32]
     mov [es:di], ax
     mov ax, [bp-30]
@@ -752,20 +849,31 @@ S64MOD:
     pop es
     pop ds
     add sp, 48
+    %undef op1_off
+    %undef op1_seg
+    %undef op2_off
+    %undef op2_seg
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 12
+    RETMACRO 12
 
 S64SHL:
 U64SHL:
     push bp
     mov bp, sp
+    %define op_off bp+RSIZE+4
+    %define op_seg bp+RSIZE+6
+    %define count  bp+RSIZE+2
+    %define res_off bp+RSIZE+8
+    %define res_seg bp+RSIZE+10
     sub sp, 8
     push ds
     push es
     push si
     push di
-    mov si, [bp+8]
-    mov ds, [bp+10]
+    mov si, [op_off]
+    mov ds, [op_seg]
     mov ax, [si]
     mov [bp-8], ax
     mov ax, [si+2]
@@ -774,7 +882,7 @@ U64SHL:
     mov [bp-4], ax
     mov ax, [si+6]
     mov [bp-2], ax
-    mov cx, [bp+6]
+    mov cx, [count]
     and cx, 63
     jz .shl_done
 .shl_loop:
@@ -784,8 +892,8 @@ U64SHL:
     rcl word [bp-2], 1
     loop .shl_loop
 .shl_done:
-    mov di, [bp+12]
-    mov es, [bp+14]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-8]
     mov [es:di], ax
     mov ax, [bp-6]
@@ -799,19 +907,29 @@ U64SHL:
     pop es
     pop ds
     add sp, 8
+    %undef op_off
+    %undef op_seg
+    %undef count
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 10
+    RETMACRO 10
 
 S64SHR:
     push bp
     mov bp, sp
+    %define op_off bp+RSIZE+4
+    %define op_seg bp+RSIZE+6
+    %define count  bp+RSIZE+2
+    %define res_off bp+RSIZE+8
+    %define res_seg bp+RSIZE+10
     sub sp, 8
     push ds
     push es
     push si
     push di
-    mov si, [bp+8]
-    mov ds, [bp+10]
+    mov si, [op_off]
+    mov ds, [op_seg]
     mov ax, [si]
     mov [bp-8], ax
     mov ax, [si+2]
@@ -820,7 +938,7 @@ S64SHR:
     mov [bp-4], ax
     mov ax, [si+6]
     mov [bp-2], ax
-    mov cx, [bp+6]
+    mov cx, [count]
     and cx, 63
     jz .asar_done
 .asar_loop:
@@ -830,8 +948,8 @@ S64SHR:
     rcr word [bp-8], 1
     loop .asar_loop
 .asar_done:
-    mov di, [bp+12]
-    mov es, [bp+14]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-8]
     mov [es:di], ax
     mov ax, [bp-6]
@@ -845,19 +963,29 @@ S64SHR:
     pop es
     pop ds
     add sp, 8
+    %undef op_off
+    %undef op_seg
+    %undef count
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 10
+    RETMACRO 10
 
 U64SHR:
     push bp
     mov bp, sp
+    %define op_off bp+RSIZE+4
+    %define op_seg bp+RSIZE+6
+    %define count  bp+RSIZE+2
+    %define res_off bp+RSIZE+8
+    %define res_seg bp+RSIZE+10
     sub sp, 8
     push ds
     push es
     push si
     push di
-    mov si, [bp+8]
-    mov ds, [bp+10]
+    mov si, [op_off]
+    mov ds, [op_seg]
     mov ax, [si]
     mov [bp-8], ax
     mov ax, [si+2]
@@ -866,7 +994,7 @@ U64SHR:
     mov [bp-4], ax
     mov ax, [si+6]
     mov [bp-2], ax
-    mov cx, [bp+6]
+    mov cx, [count]
     and cx, 63
     jz .ushr_done
 .ushr_loop:
@@ -876,8 +1004,8 @@ U64SHR:
     rcr word [bp-8], 1
     loop .ushr_loop
 .ushr_done:
-    mov di, [bp+12]
-    mov es, [bp+14]
+    mov di, [res_off]
+    mov es, [res_seg]
     mov ax, [bp-8]
     mov [es:di], ax
     mov ax, [bp-6]
@@ -891,20 +1019,29 @@ U64SHR:
     pop es
     pop ds
     add sp, 8
+    %undef op_off
+    %undef op_seg
+    %undef count
+    %undef res_off
+    %undef res_seg
     pop bp
-    retf 10
+    RETMACRO 10
 
 S64CMP:
     push bp
     mov bp, sp
+    %define ptr1_off bp+RSIZE+6
+    %define ptr1_seg bp+RSIZE+8
+    %define ptr2_off bp+RSIZE+2
+    %define ptr2_seg bp+RSIZE+4
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
-    mov di, [bp+6]
-    mov es, [bp+8]
+    mov si, [ptr1_off]
+    mov ds, [ptr1_seg]
+    mov di, [ptr2_off]
+    mov es, [ptr2_seg]
     mov ax, [si+6]
     cmp ax, [es:di+6]
     jl .less
@@ -933,20 +1070,28 @@ S64CMP:
     pop si
     pop es
     pop ds
+    %undef ptr1_off
+    %undef ptr1_seg
+    %undef ptr2_off
+    %undef ptr2_seg
     pop bp
-    retf 8
+    RETMACRO 8
 
 U64CMP:
     push bp
     mov bp, sp
+    %define ptr1_off bp+RSIZE+6
+    %define ptr1_seg bp+RSIZE+8
+    %define ptr2_off bp+RSIZE+2
+    %define ptr2_seg bp+RSIZE+4
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
-    mov di, [bp+6]
-    mov es, [bp+8]
+    mov si, [ptr1_off]
+    mov ds, [ptr1_seg]
+    mov di, [ptr2_off]
+    mov es, [ptr2_seg]
     mov ax, [si+6]
     cmp ax, [es:di+6]
     jb .less
@@ -975,31 +1120,55 @@ U64CMP:
     pop si
     pop es
     pop ds
+    %undef ptr1_off
+    %undef ptr1_seg
+    %undef ptr2_off
+    %undef ptr2_seg
     pop bp
-    retf 8
+    RETMACRO 8
 
 S64TOA:
     push bp
     mov bp, sp
+    %define ptr_off bp+RSIZE+6
+    %define ptr_seg bp+RSIZE+8
+    %define buf_off bp+RSIZE+2
+    %define buf_seg bp+RSIZE+4
     mov ax, 1
     push ax
+    %undef ptr_off
+    %undef ptr_seg
+    %undef buf_off
+    %undef buf_seg
     jmp toa_common
 
 U64TOA:
     push bp
     mov bp, sp
+    %define ptr_off bp+RSIZE+6
+    %define ptr_seg bp+RSIZE+8
+    %define buf_off bp+RSIZE+2
+    %define buf_seg bp+RSIZE+4
     xor ax, ax
     push ax
+    %undef ptr_off
+    %undef ptr_seg
+    %undef buf_off
+    %undef buf_seg
     jmp toa_common
 
 toa_common:
+    %define ptr_off bp+RSIZE+6
+    %define ptr_seg bp+RSIZE+8
+    %define buf_off bp+RSIZE+2
+    %define buf_seg bp+RSIZE+4
     sub sp, 8
     push ds
     push es
     push si
     push di
-    mov si, [bp+10]
-    mov ds, [bp+12]
+    mov si, [ptr_off]
+    mov ds, [ptr_seg]
     mov ax, [si]
     mov [bp-10], ax
     mov ax, [si+2]
@@ -1008,8 +1177,8 @@ toa_common:
     mov [bp-6], ax
     mov ax, [si+6]
     mov [bp-4], ax
-    mov di, [bp+6]
-    mov es, [bp+8]
+    mov di, [buf_off]
+    mov es, [buf_seg]
     cmp word [bp-2], 1
     jne .conv_unsigned
     test word [bp-4], 8000h
@@ -1069,8 +1238,14 @@ toa_common:
     pop es
     pop ds
     add sp, 10
+    %undef ptr_off
+    %undef ptr_seg
+    %undef buf_off
+    %undef buf_seg
     pop bp
-    retf 8
+    RETMACRO 8
+
+
 
 
 

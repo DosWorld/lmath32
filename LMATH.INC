@@ -7,3 +7,11 @@ section CODE class=code
 section .text
 %endif
 
+%ifdef IS_FAR
+RSIZE equ 4
+%define RETMACRO retf
+%else
+RSIZE equ 2
+%define RETMACRO retn
+%endif
+

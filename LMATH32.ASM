@@ -43,13 +43,13 @@ global S32CMP, U32CMP
 global S32TOA, U32TOA
 global S32NEG
 
-; S32TOA (Signed)
-; Converts signed 32-bit integer to ASCIIZ string
-; Input: far pointer to buffer (segment:offset), 32-bit value in DX:AX
-; Output: string at buffer, terminated by 0
 S32TOA:
     push bp
     mov bp, sp
+    %define buf_off bp+RSIZE+2
+    %define buf_seg bp+RSIZE+4
+    %define val_low bp+RSIZE+6
+    %define val_high bp+RSIZE+8
     push ax
     push bx
     push cx
@@ -58,12 +58,12 @@ S32TOA:
     push di
     push es
 
-    mov ax, [bp+8]
+    mov ax, [buf_seg]
     mov es, ax
-    mov di, [bp+6]
+    mov di, [buf_off]
 
-    mov dx, [bp+12]
-    mov ax, [bp+10]
+    mov dx, [val_high]
+    mov ax, [val_low]
 
     test dx, dx
     jns .is_positive
@@ -86,16 +86,20 @@ S32TOA:
     pop cx
     pop bx
     pop ax
+    %undef buf_off
+    %undef buf_seg
+    %undef val_low
+    %undef val_high
     pop bp
-    retf 8
+    RETMACRO 8
 
-; U32TOA (Unsigned)
-; Converts unsigned 32-bit integer to ASCIIZ string
-; Input: far pointer to buffer (segment:offset), 32-bit value in DX:AX
-; Output: string at buffer, terminated by 0
 U32TOA:
     push bp
     mov bp, sp
+    %define buf_off bp+RSIZE+2
+    %define buf_seg bp+RSIZE+4
+    %define val_low bp+RSIZE+6
+    %define val_high bp+RSIZE+8
     push ax
     push bx
     push cx
@@ -104,12 +108,12 @@ U32TOA:
     push di
     push es
 
-    mov ax, [bp+8]
+    mov ax, [buf_seg]
     mov es, ax
-    mov di, [bp+6]
+    mov di, [buf_off]
 
-    mov dx, [bp+12]
-    mov ax, [bp+10]
+    mov dx, [val_high]
+    mov ax, [val_low]
 
     call u32toa_internal
 
@@ -120,8 +124,12 @@ U32TOA:
     pop cx
     pop bx
     pop ax
+    %undef buf_off
+    %undef buf_seg
+    %undef val_low
+    %undef val_high
     pop bp
-    retf 8
+    RETMACRO 8
 
 u32toa_internal:
     mov bx, dx
@@ -222,119 +230,139 @@ div_kernel_32:
     pop bp
     ret
 
-; S32CMP (Signed)
-; Compares two signed 32-bit integers
-; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
-; Output: DX:AX = -1 if first < second, 0 if equal, 1 if first > second
 S32CMP:
     push bp
     mov bp, sp
-    mov dx, [bp+12]
-    cmp dx, [bp+8]
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
+    mov dx, [a_high]
+    cmp dx, [b_high]
     jl  cmp_ret_minus
     jg  cmp_ret_plus
-    mov ax, [bp+10]
-    cmp ax, [bp+6]
+    mov ax, [a_low]
+    cmp ax, [b_low]
     jb  cmp_ret_minus
     ja  cmp_ret_plus
     jmp cmp_ret_zero
 
-; U32CMP (Unsigned)
-; Compares two unsigned 32-bit integers
-; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
-; Output: DX:AX = -1 if first < second, 0 if equal, 1 if first > second
 U32CMP:
     push bp
     mov bp, sp
-    mov dx, [bp+12]
-    cmp dx, [bp+8]
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
+    mov dx, [a_high]
+    cmp dx, [b_high]
     jb  cmp_ret_minus
     ja  cmp_ret_plus
-    mov ax, [bp+10]
-    cmp ax, [bp+6]
+    mov ax, [a_low]
+    cmp ax, [b_low]
     jb  cmp_ret_minus
     ja  cmp_ret_plus
     jmp cmp_ret_zero
 
 cmp_ret_minus:
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     mov dx, 0FFFFh
     mov ax, dx
     pop bp
-    retf 8
+    RETMACRO 8
 
 cmp_ret_plus:
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     xor dx, dx
     mov ax, 1
     pop bp
-    retf 8
+    RETMACRO 8
 
 cmp_ret_zero:
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     xor dx, dx
     mov ax, dx
     pop bp
-    retf 8
+    RETMACRO 8
 
-; S32ADD (Signed) and U32ADD (Unsigned)
-; Adds two 32-bit integers
-; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
-; Output: DX:AX = sum
 S32ADD:
 U32ADD:
     push bp
     mov bp, sp
-    mov ax, [bp+10]
-    add ax, [bp+6]
-    mov dx, [bp+12]
-    adc dx, [bp+8]
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
+    mov ax, [a_low]
+    add ax, [b_low]
+    mov dx, [a_high]
+    adc dx, [b_high]
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; S32SUB (Signed) and U32SUB (Unsigned)
-; Subtracts two 32-bit integers
-; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
-; Output: DX:AX = first - second
 S32SUB:
 U32SUB:
     push bp
     mov bp, sp
-    mov ax, [bp+10]
-    sub ax, [bp+6]
-    mov dx, [bp+12]
-    sbb dx, [bp+8]
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
+    mov ax, [a_low]
+    sub ax, [b_low]
+    mov dx, [a_high]
+    sbb dx, [b_high]
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; S32NEG (Signed)
-; Negates a 32-bit integer
-; Input: 32-bit value on stack (high word, low word)
-; Output: DX:AX = -value
 S32NEG:
     push bp
     mov bp, sp
-    mov dx, [bp+8]
-    mov ax, [bp+6]
+    %define val_high bp+RSIZE+4
+    %define val_low  bp+RSIZE+2
+    mov dx, [val_high]
+    mov ax, [val_low]
     not dx
     not ax
     add ax, 1
     adc dx, 0
+    %undef val_high
+    %undef val_low
     pop bp
-    retf 4
+    RETMACRO 4
 
-; S32MUL (Signed)
-; Multiplies two signed 32-bit integers
-; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
-; Output: DX:AX = product
 S32MUL:
     push bp
     mov bp, sp
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
     push si
     push di
     sub sp, 6
 
-    mov dx, [bp+12]
-    mov ax, [bp+10]
-    mov cx, [bp+8]
-    mov bx, [bp+6]
+    mov dx, [a_high]
+    mov ax, [a_low]
+    mov cx, [b_high]
+    mov bx, [b_low]
 
     xor si, si
     test dx, 0x8000
@@ -390,23 +418,27 @@ S32MUL:
     add sp, 6
     pop di
     pop si
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; U32MUL (Unsigned)
-; Multiplies two unsigned 32-bit integers
-; Input: two 32-bit values on stack (first: DX:AX, second: high word, low word)
-; Output: DX:AX = product
 U32MUL:
     push bp
     mov bp, sp
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
     push si
     push di
 
-    mov dx, [bp+12]
-    mov ax, [bp+10]
-    mov cx, [bp+8]
-    mov bx, [bp+6]
+    mov dx, [a_high]
+    mov ax, [a_low]
+    mov cx, [b_high]
+    mov bx, [b_low]
 
     mov si, ax
     mov di, dx
@@ -423,7 +455,7 @@ U32MUL:
     push dx
 
     mov ax, di
-    mul word [bp+6]
+    mul word [b_low]
     pop cx
     add cx, ax
 
@@ -432,24 +464,28 @@ U32MUL:
 
     pop di
     pop si
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; S32DIV (Signed)
-; Divides two signed 32-bit integers
-; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
-; Output: DX:AX = quotient
 S32DIV:
     push bp
     mov bp, sp
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
     push bx
     push cx
     push si
     push di
-    mov dx, [bp+12]
-    mov ax, [bp+10]
-    mov cx, [bp+8]
-    mov bx, [bp+6]
+    mov dx, [a_high]
+    mov ax, [a_low]
+    mov cx, [b_high]
+    mov bx, [b_low]
     xor si, si
     test dx, dx
     jns .check_b
@@ -479,24 +515,28 @@ S32DIV:
     pop si
     pop cx
     pop bx
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; S32MOD (Signed)
-; Computes remainder of signed division
-; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
-; Output: DX:AX = remainder (sign of dividend)
 S32MOD:
     push bp
     mov bp, sp
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
     push bx
     push cx
     push si
     push di
-    mov dx, [bp+12]
-    mov ax, [bp+10]
-    mov cx, [bp+8]
-    mov bx, [bp+6]
+    mov dx, [a_high]
+    mov ax, [a_low]
+    mov cx, [b_high]
+    mov bx, [b_low]
     xor si, si
     test dx, dx
     jns .check_b
@@ -527,64 +567,75 @@ S32MOD:
     pop si
     pop cx
     pop bx
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; U32DIV (Unsigned)
-; Divides two unsigned 32-bit integers
-; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
-; Output: DX:AX = quotient
 U32DIV:
     push bp
     mov bp, sp
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
     push bx
     push si
     push di
-    mov dx, [bp+12]
-    mov ax, [bp+10]
-    mov cx, [bp+8]
-    mov bx, [bp+6]
+    mov dx, [a_high]
+    mov ax, [a_low]
+    mov cx, [b_high]
+    mov bx, [b_low]
     call div_kernel_32
     pop di
     pop si
     pop bx
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; U32MOD (Unsigned)
-; Computes remainder of unsigned division
-; Input: two 32-bit values on stack (dividend: DX:AX, divisor: high word, low word)
-; Output: DX:AX = remainder
 U32MOD:
     push bp
     mov bp, sp
+    %define a_high bp+RSIZE+8
+    %define a_low  bp+RSIZE+6
+    %define b_high bp+RSIZE+4
+    %define b_low  bp+RSIZE+2
     push bx
     push si
     push di
-    mov dx, [bp+12]
-    mov ax, [bp+10]
-    mov cx, [bp+8]
-    mov bx, [bp+6]
+    mov dx, [a_high]
+    mov ax, [a_low]
+    mov cx, [b_high]
+    mov bx, [b_low]
     call div_kernel_32
     mov dx, cx
     mov ax, bx
     pop di
     pop si
     pop bx
+    %undef a_high
+    %undef a_low
+    %undef b_high
+    %undef b_low
     pop bp
-    retf 8
+    RETMACRO 8
 
-; S32SHL (Signed) and U32SHL (Unsigned)
-; Shifts 32-bit value left
-; Input: 32-bit value in DX:AX, shift count in CX (clipped to 0..63)
-; Output: DX:AX = value << count
 S32SHL:
 U32SHL:
     push bp
     mov bp, sp
-    mov dx, [bp+10]
-    mov ax, [bp+8]
-    mov cx, [bp+6]
+    %define val_high bp+RSIZE+6
+    %define val_low  bp+RSIZE+4
+    %define cnt      bp+RSIZE+2
+    mov dx, [val_high]
+    mov ax, [val_low]
+    mov cx, [cnt]
     and cx, 0x3F
     cmp cx, 32
     jae .zero
@@ -600,19 +651,21 @@ U32SHL:
     xor ax, ax
     xor dx, dx
 .done:
+    %undef val_high
+    %undef val_low
+    %undef cnt
     pop bp
-    retf 6
+    RETMACRO 6
 
-; U32SHR (Unsigned)
-; Shifts unsigned 32-bit value right (logical shift)
-; Input: 32-bit value in DX:AX, shift count in CX (clipped to 0..63)
-; Output: DX:AX = value >> count (zero fill)
 U32SHR:
     push bp
     mov bp, sp
-    mov dx, [bp+10]
-    mov ax, [bp+8]
-    mov cx, [bp+6]
+    %define val_high bp+RSIZE+6
+    %define val_low  bp+RSIZE+4
+    %define cnt      bp+RSIZE+2
+    mov dx, [val_high]
+    mov ax, [val_low]
+    mov cx, [cnt]
     and cx, 0x3F
     cmp cx, 32
     jae .zero
@@ -628,19 +681,21 @@ U32SHR:
     xor ax, ax
     xor dx, dx
 .done:
+    %undef val_high
+    %undef val_low
+    %undef cnt
     pop bp
-    retf 6
+    RETMACRO 6
 
-; S32SHR (Signed)
-; Shifts signed 32-bit value right (arithmetic shift)
-; Input: 32-bit value in DX:AX, shift count in CX (clipped to 0..63)
-; Output: DX:AX = value >> count (sign extended)
 S32SHR:
     push bp
     mov bp, sp
-    mov dx, [bp+10]
-    mov ax, [bp+8]
-    mov cx, [bp+6]
+    %define val_high bp+RSIZE+6
+    %define val_low  bp+RSIZE+4
+    %define cnt      bp+RSIZE+2
+    mov dx, [val_high]
+    mov ax, [val_low]
+    mov cx, [cnt]
     and cx, 0x3F
     cmp cx, 32
     jae .fill_sign
@@ -653,17 +708,20 @@ S32SHR:
     jnz .loop
     jmp .done
 .fill_sign:
-    cmp word [bp+10], 0
+    cmp word [val_high], 0
     jns .pos_zero
     mov dx, 0FFFFh
-    mov ax, 0FFFFh
+    mov ax, dx
     jmp .done
 .pos_zero:
     xor dx, dx
     xor ax, ax
 .done:
+    %undef val_high
+    %undef val_low
+    %undef cnt
     pop bp
-    retf 6
+    RETMACRO 6
 
 
 
